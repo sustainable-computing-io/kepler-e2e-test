@@ -1,0 +1,15 @@
+- hosts: nodes
+# ansible playbook to deploy daemonset on kubernetes
+  gather_facts: true
+
+  tasks:
+  - name: "download Kepler deployment manifest"
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler/main/manifests/kubernetes/base/deployment.yaml"
+      dest: ./kepler-base-deployment.yaml
+      mode: '0440'
+
+  - name: "Deployment Kepler by reading the manifest from Kepler repo"
+    kubernetes.core.k8s:
+      src: ./kepler-base-deployment.yaml
+      state: present
