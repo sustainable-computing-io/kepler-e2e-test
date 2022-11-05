@@ -59,3 +59,46 @@
     kubernetes.core.k8s:
       src: ~/keplerExporter-serviceMonitor.yaml
       state: present
+
+  - name: "Download Kepler Model Server"
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler-model-server/main/manifests/local/deployment.yaml"
+      dest: ~/keplerModelServer.yaml
+      mode: '0440'
+
+  - name: "Deployment Kepler Model Server"
+    kubernetes.core.k8s:
+      src: ~/keplerModelServer.yaml
+      state: present
+
+  - name: "Get Kepler Model Server svc"
+    kubernetes.core.k8s_info:
+      api_version: v1
+      kind: Service
+      namespace: monitoring
+      name: kepler-model-server
+    register: kepler_model_server_service
+
+  - name: "print kepler_model_server_service"
+    ansible.builtin.debug:
+      var: kepler_model_server_service
+
+  - name: "Download Kepler-estimator patch"
+    uri:
+      url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler-estimator/main/deploy/patch.yaml"
+      return_content: yes
+    register: kepler_estimator_patch
+  
+  - name: "print kepler_estimator_patch"
+    ansible.builtin.debug:
+      var: kepler_estimator_patch.content
+  
+  - name: "Patch kepler daemonset"
+    kubernetes.core.k8s:
+      state: patched
+      kind: daemonset
+      name: kepler-exporter
+      namespace: kepler
+      version: apps/v1
+      definition:
+         "{{ kepler_estimator_patch.content }}"
