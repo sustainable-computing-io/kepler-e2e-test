@@ -6,10 +6,56 @@
   - name: "download Kepler deployment manifest"
     ansible.builtin.get_url:
       url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler/main/manifests/kubernetes/base/deployment.yaml"
-      dest: ./kepler-base-deployment.yaml
+      dest: ~/kepler-base-deployment.yaml
       mode: '0440'
 
   - name: "Deployment Kepler by reading the manifest from Kepler repo"
     kubernetes.core.k8s:
-      src: ./kepler-base-deployment.yaml
+      src: ~/kepler-base-deployment.yaml
+      state: present
+
+  - name: "Get promtheus-k8s svc"
+    kubernetes.core.k8s_info:
+      api_version: v1
+      kind: Service
+      namespace: monitoring
+      name: monitoring
+    register: promtheus_k8s_service
+
+  - name: "print promtheus_k8s_service"
+    ansible.builtin.debug:
+      var: promtheus_k8s_service
+
+  - name: "check out kube-prometheus"
+    when: "not promtheus_k8s_service.api_found"
+    ansible.builtin.git:
+      repo: "https://github.com/prometheus-operator/kube-prometheus"
+      dest: ~/kube-prometheus
+
+  - name: "apply kube-prometheus setup"
+    when: "not promtheus_k8s_service.api_found"
+    kubernetes.core.k8s:
+      src: "{{ item }}"
+      state: present
+    with_fileglob:
+        - ~/kube-prometheus/manifests/setup/*
+    ignore_errors: yes
+
+  - name: "apply kube-prometheus"
+    when: "not promtheus_k8s_service.api_found"
+    kubernetes.core.k8s:
+      src: "{{ item }}"
+      state: present      
+    with_fileglob:
+        - ~/kube-prometheus/manifests/*
+
+  - name: "download Kepler serviceMonitor"
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler/main/manifests/kubernetes/keplerExporter-serviceMonitor.yaml"
+      dest: ~/keplerExporter-serviceMonitor.yaml
+      mode: '0440'
+
+  - name: "Deployment Kepler serviceMonitor"
+    kubernetes.core.k8s:
+      src: ~/keplerExporter-serviceMonitor.yaml
       state: present
