@@ -83,6 +83,18 @@
     ansible.builtin.debug:
       var: kepler_model_server_service
 
+  - name: "Download Kepler estimator configmap"
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler-estimator/main/deploy/CgroupOnly/configmap.yaml"
+      dest: ~/keplerEstimator-configmap.yaml
+      mode: '0440'
+    
+  - name: "Apply kepler estimator configmap"
+    kubernetes.core.k8s:
+      src: ~/keplerEstimator-configmap.yaml
+      state: present
+      namespace: kepler
+
   - name: "Download Kepler-estimator patch"
     uri:
       url: "https://raw.githubusercontent.com/sustainable-computing-io/kepler-estimator/main/deploy/patch.yaml"
