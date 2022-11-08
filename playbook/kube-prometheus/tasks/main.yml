@@ -1,25 +1,25 @@
 ---
 # tasks file for kube-prometheus
-- name: "Get promtheus-k8s svc"
+- name: "Get prometheus-k8s svc"
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Service
     namespace: monitoring
-    name: monitoring
-  register: promtheus_k8s_service
+    name: prometheus-k8s
+  register: prometheus_k8s_service
 
-- name: "print promtheus_k8s_service"
+- name: "print prometheus_k8s_service"
   ansible.builtin.debug:
-    var: promtheus_k8s_service
+    var: prometheus_k8s_service
 
 - name: "check out kube-prometheus"
-  when: "not promtheus_k8s_service.api_found"
+  when: "not prometheus_k8s_service.api_found"
   ansible.builtin.git:
     repo: "https://github.com/prometheus-operator/kube-prometheus"
     dest: ~/kube-prometheus
 
 - name: "apply kube-prometheus setup"
-  when: "not promtheus_k8s_service.api_found"
+  when: "not prometheus_k8s_service.api_found"
   kubernetes.core.k8s:
     src: "{{ item }}"
     state: present
@@ -28,7 +28,7 @@
   ignore_errors: yes
 
 - name: "apply kube-prometheus"
-  when: "not promtheus_k8s_service.api_found"
+  when: "not prometheus_k8s_service.api_found"
   kubernetes.core.k8s:
     src: "{{ item }}"
     state: present      

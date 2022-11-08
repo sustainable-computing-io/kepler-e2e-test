@@ -4,3 +4,7 @@
   roles:
     - kube-prometheus
     - kepler
+    - kepler-validation
+    - kepler-e2e-test
+
+  tasks:
