@@ -1,0 +1,36 @@
+---
+# tasks file for deploy nginx deployment on kubernetes
+
+  - name: "Get prometheus-k8s svc"
+    kubernetes.core.k8s_info:
+      api_version: v1
+      kind: Service
+      namespace: monitoring
+      name: prometheus-k8s
+    register: prometheus_k8s_service  
+  - name: "print prometheus svc"
+    debug:
+      msg: " prometheus_k8s_service.resources[0].spec.clusterIP: {{ prometheus_k8s_service.resources[0].spec.clusterIP }}"
+  - name: "create kubernetes test namespace"
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: kepler-test
+  - name: "Deploy nginx helm chart on kubernetes"
+    kubernetes.core.helm:
+        chart_ref: "https://github.com/kubernetes/ingress-nginx/releases/download/helm-chart-4.3.0/ingress-nginx-4.3.0.tgz"
+        release_name: "helm-nginx"
+        namespace: "kepler-test"
+        state: present
+  - name: "query prometheus"
+    uri:
+      url: "http://{{ prometheus_k8s_service.resources[0].spec.clusterIP }}:9090/api/v1/query?query=up"
+      method: GET
+      return_content: yes
+    register: prometheus_query
+  - name: "print prometheus query"
+    debug:
+      msg: "{{ prometheus_query.content }}"
